@@ -1,0 +1,55 @@
+- name: Create EC2 instance
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+      # to create instances $ansible-playbook roboshop.yaml -e instances=['mongodb', 'redis'] 
+      # --> here enter what we want/ how many instances needed to create
+      # Default action is create, to delete instances $ansible-playbook roboshop.yaml -e action=delete
+
+    instances: ["mongodb", "redis", "mysql", "rabbitmq"]
+    action: create
+    domain_name: "gdops92.shop"
+    ami_id: "ami-0055977a6e828a4f4"
+  tasks:
+    - name: Launch EC2 instance
+      amazon.aws.ec2_instance:
+        name: "roboshop-{{ item }}"
+        instance_type: t3.micro
+        image_id: "{{ ami_id }}"
+        region: us-east-1
+        security_groups: 
+        - Medplus-common
+        - "roboshop-{{ item }}"
+      loop: "{{ instances }}"
+      when: act == "create"
+      register: ec2_output
+
+# - name: print ec2-output creation
+#   debug:
+#     msg: "{{ ec2_output }}"
+
+# # Comment above lines from 25 to 27 and then run script again adding create R53 records task
+
+# - name: create R53 records
+#   amazon.aws.route53:
+#     state: present
+#     zone: "{{ domain_name }}"
+#     record: "roboshop-{{ item }}.{{ domain_name }}"
+#     type: A                              #ipv4 is A record
+#     ttl: 1
+#     value: "{{ item.instances[0].private_ip_address }}" # 0th index of that instance item value
+#     overwrite: yes
+#   loop: "{{ ec2_output.results }}"
+#   when: action == "create"
+
+# - name: delete R53 records # how to delete R53 records
+#   amazon.aws.route53:
+#     state: absent
+#     zone: "{{ domain_name }}"
+#     record: "{{ item }}.{{ domain_name }}"
+#     type: A                              #ipv4 is A record
+#     ttl: 1
+#     overwrite: yes
+#   loop: "{{ instances }}"
+#   when: action == "delete"
