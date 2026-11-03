@@ -25,11 +25,11 @@
     when: action == "create"
     register: ec2_output
 
-# - name: print ec2-output creation
-#   debug:
-#     msg: "{{ ec2_output }}"
+- name: print ec2-output creation
+  debug:
+    msg: "{{ ec2_output }}"
 
-# # Comment above lines from 25 to 27 and then run script again adding create R53 records task
+# Comment above lines from 25 to 27 and then run script again adding create R53 records task
 
 # - name: create R53 records
 #   amazon.aws.route53:
