@@ -19,7 +19,7 @@
         image_id: "{{ ami_id }}"
         region: us-east-1
         security_groups: 
-        - Medplus common
+        - roboshop-common
         - "roboshop-{{ item }}"
     loop: "{{ instances }}"
     when: action == "create"
