@@ -1,0 +1,90 @@
+- name: Configure user server
+  hosts: user
+  become: yes
+  tasks:
+    - name: disable default nodejs module
+      command: dnf module disable nodejs -y
+
+    - name: enable nodejs24
+      command: dnf module enable nodejs:24 -y
+
+    - name: install nodejs
+      dnf:
+        name: nodejs
+        state: present
+        
+    - name: create roboshop system user
+      ansible.builtin.user:
+        name: roboshop
+        create_home: false
+        home: /app
+        system: true
+        shell: /sbin/nologin
+        comment: "roboshop system user"
+
+
+    - name: remove existing app directory
+      ansible.builtin.file:
+        path: /app
+        state: absent
+
+    - name: remove user.zip if already exists
+      ansible.builtin.file:
+        path: /tmp/user.zip
+        state: absent
+
+    - name: create app directory
+      ansible.builtin.file: 
+        path: /app
+        state: directory
+    
+    - name: download user application
+      ansible.builtin.get_url:
+        url: "https://raw.githubusercontent.com/daws-92s/roboshop-documentation/refs/heads/main/artifacts/user-{{ app_version }}.zip"
+        dest: /tmp/user.zip
+    
+    - name: unzip user application
+      ansible.builtin.unarchive:
+        src: /tmp/user.zip
+        dest: /app
+        remote_src: yes
+    
+    - name: install nodejs dependencies
+      community.general.npm:
+      path: /app
+
+    - name: configure user systemd service
+      ansible.builtin.template:
+        src: user.service.j2
+        dest: /etc/systemd/system/user.service
+    
+    - name: copy mongodb repo file
+      ansible.builtin.copy:
+        src: mongodb.repo
+        dest: /etc/yum.repos.d/mongodb.repo
+
+    - name: install mongodb client
+      dnf: 
+        name: mongodb-mongosh
+        state: present
+
+    - name: check progucts loded or not
+      command: mongosh --host {{ mongodb_host }} --quiet --eval 'db.getSiblingDB("user").products.countDocuments()' 
+
+    - name: print product_count
+      debug:
+       msg: "{{ product_count }}"
+
+    - name: load the products
+      shell: mongosh --host "{{ mongodb_host }}" < /app/db/master-data.js
+      when: product_count.stdout | int == 0
+
+    - name: daemon reload
+      systemd_service:
+         daemon_reload: true
+
+    - name: start and enable user
+      service:
+        name: user
+        state: restarted
+        enabled: yes

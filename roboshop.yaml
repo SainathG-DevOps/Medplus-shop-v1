@@ -6,7 +6,7 @@
     # ansible-playbook roboshop.yaml -e "action=delete"
     #"catalogue", "user", "cart", "shipping", "payment", "frontend"
     
-    instances: ["mongodb", "redis", "mysql", "rabbitmq"] 
+    instances: ["mongodb", "redis", "mysql", "rabbitmq", "catalogue", "user", "cart", "shipping", "payment", "frontend"]
     action: create
     domain_name: gdops92.shop
     ami_id: ami-0055977a6e828a4f4
